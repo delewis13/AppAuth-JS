@@ -40,6 +40,7 @@ export class NodeBasedHandler extends AuthorizationRequestHandler {
   constructor(
       // default to port 8000
       public httpServerPort = 8000,
+      public openCallback: null | ((url: string) => void) = null,
       utils: QueryStringUtils = new BasicQueryStringUtils(),
       crypto: Crypto = new NodeCrypto()) {
     super(utils, crypto);
@@ -111,7 +112,11 @@ export class NodeBasedHandler extends AuthorizationRequestHandler {
           server.listen(this.httpServerPort);
           const url = this.buildRequestUrl(configuration, request);
           log('Making a request to ', request, url);
-          opener(url);
+          if (this.openCallback) {
+            this.openCallback(url);
+          } else {
+            opener(url);
+          };
         })
         .catch((error) => {
           log('Something bad happened ', error);

@@ -108,7 +108,9 @@ export class NodeBasedHandler extends AuthorizationRequestHandler {
     request.setupCodeVerifier()
         .then(() => {
           server = Http.createServer(requestHandler);
-          server.listen(this.httpServerPort);
+          server.listen(this.httpServerPort).on("error", () => {
+            this.emitter.emit(ServerEventsEmitter.ON_UNABLE_TO_START);
+          });
           const url = this.buildRequestUrl(configuration, request);
           log('Making a request to ', request, url);
           if (this.openCallback) {

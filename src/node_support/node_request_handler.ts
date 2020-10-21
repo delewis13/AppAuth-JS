@@ -28,7 +28,7 @@ import {NodeCrypto} from './crypto_utils';
 // TypeScript typings for `opener` are not correct and do not export it as module
 import opener = require('opener');
 
-class ServerEventsEmitter extends EventEmitter {
+export class ServerEventsEmitter extends EventEmitter {
   static ON_UNABLE_TO_START = 'unable_to_start';
   static ON_AUTHORIZATION_RESPONSE = 'authorization_response';
 }
@@ -36,6 +36,7 @@ class ServerEventsEmitter extends EventEmitter {
 export class NodeBasedHandler extends AuthorizationRequestHandler {
   // the handle to the current authorization request
   authorizationPromise: Promise<AuthorizationRequestResponse|null>|null = null;
+  public emitter = new ServerEventsEmitter()
 
   constructor(
       // default to port 8000
@@ -51,8 +52,6 @@ export class NodeBasedHandler extends AuthorizationRequestHandler {
       request: AuthorizationRequest) {
     // use opener to launch a web browser and start the authorization flow.
     // start a web server to handle the authorization response.
-    const emitter = new ServerEventsEmitter();
-
     const requestHandler = (httpRequest: Http.IncomingMessage, response: Http.ServerResponse) => {
       if (!httpRequest.url) {
         return;
@@ -88,15 +87,15 @@ export class NodeBasedHandler extends AuthorizationRequestHandler {
         response: authorizationResponse,
         error: authorizationError
       } as AuthorizationRequestResponse;
-      emitter.emit(ServerEventsEmitter.ON_AUTHORIZATION_RESPONSE, completeResponse);
+      this.emitter.emit(ServerEventsEmitter.ON_AUTHORIZATION_RESPONSE, completeResponse);
       response.end('Close your browser to continue');
     };
 
     this.authorizationPromise = new Promise<AuthorizationRequestResponse>((resolve, reject) => {
-      emitter.once(ServerEventsEmitter.ON_UNABLE_TO_START, () => {
+      this.emitter.once(ServerEventsEmitter.ON_UNABLE_TO_START, () => {
         reject(`Unable to create HTTP server at port ${this.httpServerPort}`);
       });
-      emitter.once(ServerEventsEmitter.ON_AUTHORIZATION_RESPONSE, (result: any) => {
+      this.emitter.once(ServerEventsEmitter.ON_AUTHORIZATION_RESPONSE, (result: any) => {
         server.close();
         // resolve pending promise
         resolve(result as AuthorizationRequestResponse);
@@ -120,7 +119,7 @@ export class NodeBasedHandler extends AuthorizationRequestHandler {
         })
         .catch((error) => {
           log('Something bad happened ', error);
-          emitter.emit(ServerEventsEmitter.ON_UNABLE_TO_START);
+          this.emitter.emit(ServerEventsEmitter.ON_UNABLE_TO_START);
         });
   }
 

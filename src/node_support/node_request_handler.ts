@@ -31,6 +31,8 @@ import opener = require('opener');
 export class ServerEventsEmitter extends EventEmitter {
   static ON_UNABLE_TO_START = 'unable_to_start';
   static ON_AUTHORIZATION_RESPONSE = 'authorization_response';
+  static START_SERVER_SHUTDOWN = 'start_server_shutdown'
+  static SERVER_SHUTDOWN_COMPLETE = 'server_shutdown_complete'
 }
 
 export class NodeBasedHandler extends AuthorizationRequestHandler {
@@ -111,6 +113,15 @@ export class NodeBasedHandler extends AuthorizationRequestHandler {
           server.listen(this.httpServerPort).on("error", () => {
             this.emitter.emit(ServerEventsEmitter.ON_UNABLE_TO_START);
           });
+          this.emitter.on(ServerEventsEmitter.START_SERVER_SHUTDOWN, () => {
+            server.close((err) => {
+              if (err && !err.message.includes("Server is not running")) {
+                log('Failed to close server: ', err)
+                return
+              } 
+              this.emitter.emit(ServerEventsEmitter.SERVER_SHUTDOWN_COMPLETE)
+            })
+          })
           const url = this.buildRequestUrl(configuration, request);
           log('Making a request to ', request, url);
           if (this.openCallback) {

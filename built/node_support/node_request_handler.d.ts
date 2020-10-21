@@ -8,6 +8,8 @@ import { QueryStringUtils } from '../query_string_utils';
 export declare class ServerEventsEmitter extends EventEmitter {
     static ON_UNABLE_TO_START: string;
     static ON_AUTHORIZATION_RESPONSE: string;
+    static START_SERVER_SHUTDOWN: string;
+    static SERVER_SHUTDOWN_COMPLETE: string;
 }
 export declare class NodeBasedHandler extends AuthorizationRequestHandler {
     httpServerPort: number;
